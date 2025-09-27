@@ -1,1 +1,4 @@
 prescription_id,customer_name,doctor_name,medicine_name,quantity,dosage,instructions,date_prescribed,status,total_cost,created_at
+RX001,John Smith,Dr. Wilson,Amoxicillin,30,500mg,Take 1 tablet 3 times daily with food,2025-09-22,Filled,375.0,2025-09-27 20:10:13
+RX002,Sarah Johnson,Dr. Chen,Omeprazole,60,20mg,Take 1 capsule daily before breakfast,2025-09-25,Ready for pickup,900.0,2025-09-27 20:10:13
+RX003,Robert Davis,Dr. Wilson,Cetirizine,90,10mg,Take 1 tablet daily for allergies,2025-09-27,Processing,562.5,2025-09-27 20:10:13

@@ -63,8 +63,8 @@ with tab1:
                 else:
                     return 'background-color: #D1FAE5; color: #059669'
             
-            styled_df = display_df.style.applymap(color_stock_status, subset=['stock_status'])
-            st.dataframe(styled_df, use_container_width=True)
+            styled_df = display_df.style.map(color_stock_status, subset=['stock_status'])
+            st.dataframe(styled_df, width='stretch')
             
             # Quick actions
             st.subheader("Quick Actions")

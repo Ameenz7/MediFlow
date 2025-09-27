@@ -48,6 +48,17 @@ class DataManager:
             ]
             customers_df = pd.DataFrame(columns=customers_columns)
             customers_df.to_csv(self.customers_file, index=False)
+
+        # Refill reminders CSV structure
+        self.refill_reminders_file = os.path.join(self.data_dir, "refill_reminders.csv")
+        if not os.path.exists(self.refill_reminders_file):
+            refill_columns = [
+                'reminder_id', 'customer_name', 'medicine_name', 'last_prescription_date',
+                'refill_due_date', 'dosage', 'quantity_per_refill', 'reminder_sent',
+                'status', 'notes', 'created_at'
+            ]
+            refill_df = pd.DataFrame(columns=refill_columns)
+            refill_df.to_csv(self.refill_reminders_file, index=False)
     
     # Medicine management methods
     def load_medicines(self):
@@ -235,4 +246,61 @@ class DataManager:
             return True
         except Exception as e:
             st.error(f"Error creating backup: {e}")
+            return False
+
+    # Refill reminder management methods
+    def load_refill_reminders(self):
+        """Load refill reminders from CSV file"""
+        try:
+            return pd.read_csv(self.refill_reminders_file)
+        except Exception as e:
+            st.error(f"Error loading refill reminders: {e}")
+            return pd.DataFrame()
+
+    def add_refill_reminder(self, reminder_data):
+        """Add a new refill reminder"""
+        try:
+            reminders_df = self.load_refill_reminders()
+            new_reminder = pd.DataFrame([reminder_data])
+            reminders_df = pd.concat([reminders_df, new_reminder], ignore_index=True)
+            reminders_df.to_csv(self.refill_reminders_file, index=False)
+            return True
+        except Exception as e:
+            st.error(f"Error adding refill reminder: {e}")
+            return False
+
+    def get_due_refills(self, days_ahead=7):
+        """Get refill reminders due within specified days"""
+        reminders_df = self.load_refill_reminders()
+        if not reminders_df.empty:
+            reminders_df['refill_due_date'] = pd.to_datetime(reminders_df['refill_due_date'])
+            cutoff_date = pd.Timestamp.now() + pd.Timedelta(days=days_ahead)
+            due_reminders = reminders_df[reminders_df['refill_due_date'] <= cutoff_date]
+            return due_reminders[due_reminders['status'] == 'Active']
+        return pd.DataFrame()
+
+    def update_refill_reminder_status(self, reminder_id, new_status):
+        """Update refill reminder status"""
+        try:
+            reminders_df = self.load_refill_reminders()
+            if not reminders_df.empty:
+                reminders_df.loc[reminders_df['reminder_id'] == reminder_id, 'status'] = new_status
+                reminders_df.to_csv(self.refill_reminders_file, index=False)
+                return True
+            return False
+        except Exception as e:
+            st.error(f"Error updating refill reminder status: {e}")
+            return False
+
+    def mark_reminder_sent(self, reminder_id):
+        """Mark a refill reminder as sent"""
+        try:
+            reminders_df = self.load_refill_reminders()
+            if not reminders_df.empty:
+                reminders_df.loc[reminders_df['reminder_id'] == reminder_id, 'reminder_sent'] = True
+                reminders_df.to_csv(self.refill_reminders_file, index=False)
+                return True
+            return False
+        except Exception as e:
+            st.error(f"Error marking reminder as sent: {e}")
             return False

@@ -1,1 +1,4 @@
 customer_id,name,date_of_birth,gender,blood_type,phone,email,address,allergies,medical_conditions,emergency_contact_name,emergency_contact_phone,date_registered
+CUST001,John Smith,1985-03-15,Male,O+,+1-555-0123,john.smith@email.com,"123 Main St, City, State 12345",Penicillin,Hypertension,Jane Smith,+1-555-0124,2025-09-27
+CUST002,Sarah Johnson,1990-07-22,Female,A+,+1-555-0456,sarah.j@email.com,"456 Oak Ave, City, State 12346",None,Diabetes,Mike Johnson,+1-555-0457,2025-09-27
+CUST003,Robert Davis,1978-11-08,Male,B-,+1-555-0789,robert.davis@email.com,"789 Pine St, City, State 12347",Aspirin,High Cholesterol,Lisa Davis,+1-555-0790,2025-09-27

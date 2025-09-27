@@ -7,6 +7,11 @@ from utils.helpers import format_currency
 
 st.markdown('<h1 class="main-header">📊 Reports & Analytics</h1>', unsafe_allow_html=True)
 
+# Initialize data manager if not already done
+if 'data_manager' not in st.session_state:
+    from utils.data_manager import DataManager
+    st.session_state.data_manager = DataManager()
+
 dm = st.session_state.data_manager
 
 # Reports tabs
@@ -61,11 +66,11 @@ with tab1:
                 }
             )
             fig.update_layout(height=400)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
         
         with col2:
             st.subheader("Inventory Value by Category")
-            category_value = medicines.groupby('category').apply(
+            category_value = medicines.groupby('category', group_keys=False).apply(
                 lambda x: (x['stock_quantity'] * x['unit_price']).sum()
             ).reset_index()
             category_value.columns = ['category', 'value']
@@ -78,7 +83,7 @@ with tab1:
                 color_continuous_scale='Blues'
             )
             fig.update_layout(height=400, xaxis_tickangle=-45)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
         
         # Low stock alert table
         st.subheader("🚨 Low Stock Alerts")
@@ -89,7 +94,7 @@ with tab1:
             display_df['action_needed'] = display_df.apply(
                 lambda row: f"Order {row['reorder_level'] * 2 - row['stock_quantity']} units", axis=1
             )
-            st.dataframe(display_df, use_container_width=True)
+            st.dataframe(display_df, width='stretch')
         else:
             st.success("✅ All medicines are adequately stocked!")
         
@@ -103,7 +108,7 @@ with tab1:
             expiring_medicines['days_to_expiry'] = (expiring_medicines['expiry_date'] - datetime.now()).dt.days
             display_df = expiring_medicines[['name', 'category', 'stock_quantity', 'expiry_date', 'days_to_expiry']].copy()
             display_df = display_df.sort_values('days_to_expiry')
-            st.dataframe(display_df, use_container_width=True)
+            st.dataframe(display_df, width='stretch')
         else:
             st.success("✅ No medicines expiring in the next 90 days!")
         
@@ -174,7 +179,7 @@ with tab2:
                     )
                     fig.update_traces(line_color='#2563EB')
                     fig.update_layout(height=400)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                 else:
                     st.info("No completed sales in the selected period")
             
@@ -193,7 +198,7 @@ with tab2:
                         title="Top 10 Medicines by Revenue"
                     )
                     fig.update_layout(height=400, xaxis_tickangle=-45)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                 else:
                     st.info("No sales data available")
             
@@ -208,7 +213,7 @@ with tab2:
                 sales_summary.columns = ['Medicine', 'Units Sold', 'Revenue', 'Orders']
                 sales_summary['Revenue'] = sales_summary['Revenue'].apply(format_currency)
                 sales_summary = sales_summary.sort_values('Units Sold', ascending=False)
-                st.dataframe(sales_summary, use_container_width=True)
+                st.dataframe(sales_summary, width='stretch')
         else:
             st.info("No sales data found for the selected date range")
     else:
@@ -265,7 +270,7 @@ with tab3:
                 title="Top 10 Medicines by Profit Margin %"
             )
             fig.update_layout(height=400)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
         
         with col2:
             st.subheader("Inventory Value vs Cost by Category")
@@ -294,7 +299,7 @@ with tab3:
                 height=400,
                 xaxis_tickangle=-45
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
         
         # Supplier Financial Analysis
         st.subheader("💼 Supplier Financial Performance")
@@ -314,7 +319,7 @@ with tab3:
             supplier_analysis[col] = supplier_analysis[col].apply(format_currency)
         supplier_analysis['Avg Cost per Medicine'] = supplier_analysis['Avg Cost per Medicine'].apply(format_currency)
         
-        st.dataframe(supplier_analysis, use_container_width=True)
+        st.dataframe(supplier_analysis, width='stretch')
         
         # Sales Profit Analysis (if prescriptions data available)
         if not prescriptions.empty:
@@ -371,7 +376,7 @@ with tab3:
                         title="Top 10 Medicines by Profit Generated"
                     )
                     fig.update_layout(height=400, xaxis_tickangle=-45)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                 
                 with col2:
                     st.subheader("Daily Profit Trends")
@@ -404,7 +409,7 @@ with tab3:
                         height=400,
                         yaxis_title="Amount ($)"
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
             else:
                 st.info("No completed sales available for profit analysis")
         
@@ -419,7 +424,7 @@ with tab3:
                 display_df = low_margin_medicines[['name', 'category', 'supplier', 'cost_price', 'unit_price', 'profit_margin_percent']].copy()
                 display_df['cost_price'] = display_df['cost_price'].apply(format_currency)
                 display_df['unit_price'] = display_df['unit_price'].apply(format_currency)
-                st.dataframe(display_df, use_container_width=True)
+                st.dataframe(display_df, width='stretch')
         
         # High value inventory
         high_value_medicines = medicines[medicines['inventory_value'] > 1000]
@@ -430,7 +435,7 @@ with tab3:
                 display_df['unit_price'] = display_df['unit_price'].apply(format_currency)
                 display_df['inventory_value'] = display_df['inventory_value'].apply(format_currency)
                 display_df['potential_profit'] = display_df['potential_profit'].apply(format_currency)
-                st.dataframe(display_df, use_container_width=True)
+                st.dataframe(display_df, width='stretch')
         
         # Export financial data
         st.subheader("📊 Export Financial Reports")
@@ -508,7 +513,7 @@ with tab4:
                 title="Customer Distribution by Age Group"
             )
             fig.update_layout(height=400)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
         
         with col2:
             st.subheader("Top Customers by Spending")
@@ -524,7 +529,7 @@ with tab4:
                     title="Top 10 Customers by Total Spending"
                 )
                 fig.update_layout(height=400, xaxis_tickangle=-45)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
             else:
                 st.info("No customer spending data available")
         
@@ -547,7 +552,7 @@ with tab4:
         
         activity_df = pd.DataFrame(customer_activity)
         activity_df = activity_df.sort_values('Total Prescriptions', ascending=False)
-        st.dataframe(activity_df, use_container_width=True)
+        st.dataframe(activity_df, width='stretch')
         
     else:
         st.info("Insufficient data for customer analytics.")
@@ -596,7 +601,7 @@ with tab5:
                 }
             )
             fig.update_layout(height=400)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
         
         with col2:
             st.subheader("Prescriptions by Doctor")
@@ -608,7 +613,7 @@ with tab5:
                 title="Top 10 Prescribing Doctors"
             )
             fig.update_layout(height=400)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
         
         # Monthly prescription trends
         st.subheader("Monthly Prescription Trends")
@@ -633,7 +638,7 @@ with tab5:
             yaxis_title="Number of Prescriptions",
             height=400
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
         
         # Export functionality
         st.subheader("📥 Export Reports")

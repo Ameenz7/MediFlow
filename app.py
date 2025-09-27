@@ -4,8 +4,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import os
-from utils.database_manager import DatabaseManager
+from utils.data_manager import DataManager
 from utils.helpers import format_currency, get_stock_status_color
+from utils.medicine_interactions import check_patient_safety
 
 # Page configuration
 st.set_page_config(
@@ -15,9 +16,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Initialize database manager
+# Initialize data manager
 if 'data_manager' not in st.session_state:
-    st.session_state.data_manager = DatabaseManager()
+    st.session_state.data_manager = DataManager()
 
 dm = st.session_state.data_manager
 
@@ -62,10 +63,12 @@ st.sidebar.markdown("---")
 # Navigation
 pages = {
     "🏠 Dashboard": "dashboard",
-    "💊 Inventory": "inventory", 
+    "💊 Inventory": "inventory",
     "📋 Prescriptions": "prescriptions",
     "👥 Customers": "customers",
-    "📊 Reports": "reports",
+    "💊 Refill Reminders": "refill_reminders",
+    "📱 Quick Scan": "quick_scan",
+    "� Reports": "reports",
     "💾 Backup & Export": "backup_export"
 }
 
@@ -134,7 +137,7 @@ if selected_page == "🏠 Dashboard":
                 }
             )
             fig.update_layout(height=300)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
         else:
             st.info("No medicine data available")
     
@@ -160,7 +163,7 @@ if selected_page == "🏠 Dashboard":
                     )
                     fig.update_traces(line_color='#2563EB')
                     fig.update_layout(height=300)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                 else:
                     st.info("No prescription data in the last 30 days")
             except Exception as e:
@@ -171,7 +174,43 @@ if selected_page == "🏠 Dashboard":
     
     # Alerts section
     st.subheader("🚨 Alerts & Notifications")
-    
+
+    # Medicine Conflict Warnings
+    if not prescriptions.empty and not customers.empty:
+        conflict_warnings = []
+
+        # Check each completed prescription for potential conflicts
+        completed_prescriptions = prescriptions[prescriptions['status'] == 'Completed']
+
+        for customer_name in completed_prescriptions['customer_name'].unique():
+            customer_prescriptions = completed_prescriptions[completed_prescriptions['customer_name'] == customer_name]
+            if len(customer_prescriptions) > 1:
+                # Get customer data
+                customer_data = customers[customers['name'] == customer_name]
+                if not customer_data.empty:
+                    customer_info = customer_data.iloc[0]
+                    medicines_list = customer_prescriptions['medicine_name'].tolist()
+
+                    # Check for conflicts
+                    safety_check = check_patient_safety(medicines_list, customer_info.to_dict())
+                    if safety_check['warnings']:
+                        conflict_warnings.append({
+                            'customer': customer_name,
+                            'medicines': medicines_list,
+                            'warnings': safety_check['warnings'],
+                            'high_risk': safety_check['high_risk_count'] > 0
+                        })
+
+        if conflict_warnings:
+            st.markdown('<div class="warning-card">', unsafe_allow_html=True)
+            st.error(f"💊 {len(conflict_warnings)} patients have potential medicine conflicts!")
+            for warning in conflict_warnings[:3]:  # Show first 3
+                severity_icon = "🔴" if warning['high_risk'] else "🟡"
+                st.write(f"{severity_icon} **{warning['customer']}** - {len(warning['warnings'])} conflict(s) detected")
+            if len(conflict_warnings) > 3:
+                st.write(f"...and {len(conflict_warnings) - 3} more patients")
+            st.markdown('</div>', unsafe_allow_html=True)
+
     # Low stock alerts
     if not medicines.empty:
         low_stock_medicines = medicines[medicines['stock_quantity'] <= medicines['reorder_level']]
@@ -183,7 +222,7 @@ if selected_page == "🏠 Dashboard":
             if len(low_stock_medicines) > 3:
                 st.write(f"...and {len(low_stock_medicines) - 3} more")
             st.markdown('</div>', unsafe_allow_html=True)
-    
+
     # Expiring medicines
     if not medicines.empty:
         medicines['expiry_date'] = pd.to_datetime(medicines['expiry_date'])
@@ -199,15 +238,59 @@ if selected_page == "🏠 Dashboard":
             st.markdown('</div>', unsafe_allow_html=True)
 
 elif selected_page == "💊 Inventory":
-    exec(open('pages/inventory.py').read())
+    exec(open('pages/inventory.py', encoding="utf-8").read())
 elif selected_page == "📋 Prescriptions":
-    exec(open('pages/prescriptions.py').read())
+    exec(open('pages/prescriptions.py', encoding="utf-8").read())
 elif selected_page == "👥 Customers":
-    exec(open('pages/customers.py').read())
-elif selected_page == "📊 Reports":
-    exec(open('pages/reports.py').read())
+    exec(open('pages/customers.py', encoding="utf-8").read())
+elif selected_page == "💊 Refill Reminders":
+    exec(open('pages/refill_reminders.py', encoding="utf-8").read())
+elif selected_page == "📱 Quick Scan":
+    # Quick scan interface (standalone version)
+    import streamlit as st
+    from utils.barcode_scanner import BarcodeScanner
+    from utils.data_manager import DataManager
+
+    st.markdown('<h1 class="main-header">📱 Quick Scan Entry</h1>', unsafe_allow_html=True)
+
+    dm = st.session_state.data_manager
+    scanner = BarcodeScanner()
+
+    medicines = dm.load_medicines()
+    customers = dm.load_customers()
+
+    if not customers.empty and not medicines.empty:
+        from utils.barcode_scanner import create_prescription_from_scan
+        prescription_data = create_prescription_from_scan(medicines, customers)
+
+        if prescription_data and st.button("💾 Save to Prescriptions"):
+            # Save the scanned prescription
+            for item in prescription_data['scanned_items']:
+                prescription_item = {
+                    'prescription_id': prescription_data['prescription_id'],
+                    'customer_name': prescription_data['customer_name'],
+                    'doctor_name': prescription_data['doctor_name'],
+                    'medicine_name': item['medicine_name'],
+                    'quantity': item['quantity'],
+                    'dosage': item['dosage'],
+                    'instructions': f"Quick scan - {item['dosage']}",
+                    'date_prescribed': prescription_data['date_prescribed'],
+                    'status': 'Pending',
+                    'total_cost': item['total_cost'],
+                    'created_at': prescription_data['created_at']
+                }
+                dm.add_prescription(prescription_item)
+                dm.update_medicine_stock(item['medicine_name'], -item['quantity'])
+
+            st.success("✅ Prescription saved successfully!")
+            st.rerun()
+    else:
+        st.warning("⚠️ Please ensure you have both customers and medicines in your system.")
+
+elif selected_page == "� Reports":
+    exec(open('pages/reports.py', encoding="utf-8").read())
 elif selected_page == "💾 Backup & Export":
-    exec(open('pages/backup_export.py').read())
+    exec(open('pages/backup_export.py', encoding="utf-8").read())
 
 # Footer
 st.sidebar.markdown("---")

@@ -1,0 +1,189 @@
+{
+  "interactions": {
+    "Warfarin": {
+      "Amoxicillin": {
+        "severity": "high",
+        "description": "Increased risk of bleeding due to reduced Warfarin metabolism",
+        "recommendation": "Monitor INR closely and adjust Warfarin dose"
+      },
+      "Ibuprofen": {
+        "severity": "high",
+        "description": "Significantly increased risk of bleeding and stomach ulcers",
+        "recommendation": "Avoid combination or use alternative pain relief"
+      },
+      "Aspirin": {
+        "severity": "high",
+        "description": "Dangerously increased risk of bleeding",
+        "recommendation": "Contraindicated - avoid combination"
+      }
+    },
+    "Amoxicillin": {
+      "Warfarin": {
+        "severity": "high",
+        "description": "Increased risk of bleeding due to reduced Warfarin metabolism",
+        "recommendation": "Monitor INR closely and adjust Warfarin dose"
+      }
+    },
+    "Ibuprofen": {
+      "Warfarin": {
+        "severity": "high",
+        "description": "Significantly increased risk of bleeding and stomach ulcers",
+        "recommendation": "Avoid combination or use alternative pain relief"
+      },
+      "Aspirin": {
+        "severity": "medium",
+        "description": "Increased risk of stomach bleeding and ulcers",
+        "recommendation": "Use with caution, consider gastroprotection"
+      },
+      "Lisinopril": {
+        "severity": "medium",
+        "description": "May reduce the blood pressure lowering effects of Lisinopril",
+        "recommendation": "Monitor blood pressure closely"
+      }
+    },
+    "Digoxin": {
+      "Amoxicillin": {
+        "severity": "medium",
+        "description": "May increase Digoxin levels and risk of toxicity",
+        "recommendation": "Monitor Digoxin levels and watch for signs of toxicity"
+      },
+      "Omeprazole": {
+        "severity": "medium",
+        "description": "May increase Digoxin absorption and levels",
+        "recommendation": "Monitor Digoxin levels closely"
+      }
+    },
+    "Lithium": {
+      "Ibuprofen": {
+        "severity": "high",
+        "description": "NSAIDs can increase Lithium levels leading to toxicity",
+        "recommendation": "Avoid combination or monitor Lithium levels very closely"
+      },
+      "ACE Inhibitors": {
+        "severity": "medium",
+        "description": "May increase Lithium levels",
+        "recommendation": "Monitor Lithium levels and kidney function"
+      }
+    },
+    "Methotrexate": {
+      "Ibuprofen": {
+        "severity": "high",
+        "description": "NSAIDs can increase Methotrexate toxicity",
+        "recommendation": "Avoid NSAIDs during Methotrexate treatment"
+      },
+      "Aspirin": {
+        "severity": "high",
+        "description": "May increase Methotrexate toxicity",
+        "recommendation": "Use with extreme caution or avoid"
+      }
+    },
+    "Omeprazole": {
+      "Digoxin": {
+        "severity": "medium",
+        "description": "May increase Digoxin absorption and levels",
+        "recommendation": "Monitor Digoxin levels closely"
+      },
+      "Clopidogrel": {
+        "severity": "high",
+        "description": "May reduce the effectiveness of Clopidogrel",
+        "recommendation": "Consider alternative acid suppression therapy"
+      }
+    },
+    "Simvastatin": {
+      "Amoxicillin": {
+        "severity": "medium",
+        "description": "May increase risk of muscle toxicity",
+        "recommendation": "Monitor for muscle pain and weakness"
+      },
+      "Clarithromycin": {
+        "severity": "high",
+        "description": "Significantly increased risk of muscle toxicity and rhabdomyolysis",
+        "recommendation": "Contraindicated - avoid combination"
+      }
+    },
+    "Prednisone": {
+      "Ibuprofen": {
+        "severity": "medium",
+        "description": "Increased risk of stomach ulcers and bleeding",
+        "recommendation": "Use gastroprotection and monitor closely"
+      },
+      "Aspirin": {
+        "severity": "high",
+        "description": "Significantly increased risk of stomach ulcers and bleeding",
+        "recommendation": "Avoid combination or use alternative pain relief"
+      }
+    }
+  },
+  "contraindications": {
+    "Warfarin": [
+      "Recent surgery",
+      "Active bleeding",
+      "Severe hypertension",
+      "Pregnancy (first trimester)"
+    ],
+    "Amoxicillin": [
+      "History of severe allergic reaction to penicillin",
+      "Infectious mononucleosis"
+    ],
+    "Ibuprofen": [
+      "Active stomach ulcer",
+      "Severe heart failure",
+      "Third trimester pregnancy",
+      "Severe kidney impairment"
+    ],
+    "Aspirin": [
+      "Children under 16 with viral infections",
+      "Active stomach ulcer",
+      "Bleeding disorders",
+      "Severe liver impairment"
+    ],
+    "Digoxin": [
+      "Heart block",
+      "Severe bradycardia",
+      "Hypokalemia"
+    ],
+    "Lithium": [
+      "Severe kidney impairment",
+      "Dehydration",
+      "Heart disease"
+    ],
+    "Methotrexate": [
+      "Pregnancy",
+      "Severe kidney impairment",
+      "Severe liver impairment",
+      "Active infection"
+    ],
+    "Omeprazole": [
+      "Severe liver impairment"
+    ]
+  },
+  "age_warnings": {
+    "Aspirin": {
+      "min_age": 16,
+      "warning": "Not recommended for children under 16 due to risk of Reye's syndrome"
+    },
+    "Warfarin": {
+      "min_age": 18,
+      "warning": "Requires careful monitoring in elderly patients"
+    },
+    "Ibuprofen": {
+      "max_age": null,
+      "warning": "Use with caution in elderly patients - increased risk of side effects"
+    }
+  },
+  "allergy_warnings": {
+    "Penicillin": [
+      "Amoxicillin",
+      "Ampicillin",
+      "Dicloxacillin"
+    ],
+    "Aspirin": [
+      "Ibuprofen",
+      "Naproxen"
+    ],
+    "Sulfa": [
+      "Sulfamethoxazole",
+      "Sulfasalazine"
+    ]
+  }
+}
