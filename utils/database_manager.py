@@ -4,12 +4,16 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import streamlit as st
 from datetime import datetime
+from sqlalchemy import create_engine
 
 class DatabaseManager:
     def __init__(self):
         self.database_url = os.getenv('DATABASE_URL')
         if not self.database_url:
             raise ValueError("DATABASE_URL environment variable not set")
+        
+        # Create SQLAlchemy engine for pandas operations
+        self.engine = create_engine(self.database_url)
     
     def get_connection(self):
         """Get database connection"""
@@ -23,14 +27,13 @@ class DatabaseManager:
     def load_medicines(self):
         """Load medicines from database"""
         try:
-            with self.get_connection() as conn:
-                query = """
-                SELECT id, name, category, manufacturer, supplier, unit_price, 
-                       stock_quantity, reorder_level, expiry_date, description, date_added
-                FROM medicines
-                ORDER BY name
-                """
-                return pd.read_sql_query(query, conn)
+            query = """
+            SELECT id, name, category, manufacturer, supplier, unit_price, 
+                   stock_quantity, reorder_level, expiry_date, description, date_added
+            FROM medicines
+            ORDER BY name
+            """
+            return pd.read_sql_query(query, self.engine)
         except Exception as e:
             st.error(f"Error loading medicines: {e}")
             return pd.DataFrame()
@@ -94,15 +97,14 @@ class DatabaseManager:
     def load_prescriptions(self):
         """Load prescriptions from database"""
         try:
-            with self.get_connection() as conn:
-                query = """
-                SELECT prescription_id, customer_id, customer_name, doctor_name, 
-                       medicine_id, medicine_name, quantity, dosage, instructions,
-                       date_prescribed, status, total_cost, created_at
-                FROM prescriptions
-                ORDER BY created_at DESC
-                """
-                return pd.read_sql_query(query, conn)
+            query = """
+            SELECT prescription_id, customer_id, customer_name, doctor_name, 
+                   medicine_id, medicine_name, quantity, dosage, instructions,
+                   date_prescribed, status, total_cost, created_at
+            FROM prescriptions
+            ORDER BY created_at DESC
+            """
+            return pd.read_sql_query(query, self.engine)
         except Exception as e:
             st.error(f"Error loading prescriptions: {e}")
             return pd.DataFrame()
@@ -164,15 +166,14 @@ class DatabaseManager:
     def load_customers(self):
         """Load customers from database"""
         try:
-            with self.get_connection() as conn:
-                query = """
-                SELECT customer_id, name, date_of_birth, gender, blood_type, phone, email,
-                       address, allergies, medical_conditions, emergency_contact_name,
-                       emergency_contact_phone, date_registered
-                FROM customers
-                ORDER BY name
-                """
-                return pd.read_sql_query(query, conn)
+            query = """
+            SELECT customer_id, name, date_of_birth, gender, blood_type, phone, email,
+                   address, allergies, medical_conditions, emergency_contact_name,
+                   emergency_contact_phone, date_registered
+            FROM customers
+            ORDER BY name
+            """
+            return pd.read_sql_query(query, self.engine)
         except Exception as e:
             st.error(f"Error loading customers: {e}")
             return pd.DataFrame()
@@ -249,9 +250,8 @@ class DatabaseManager:
     def get_low_stock_medicines(self):
         """Get medicines with stock below reorder level"""
         try:
-            with self.get_connection() as conn:
-                query = "SELECT * FROM medicines WHERE stock_quantity <= reorder_level ORDER BY stock_quantity"
-                return pd.read_sql_query(query, conn)
+            query = "SELECT * FROM medicines WHERE stock_quantity <= reorder_level ORDER BY stock_quantity"
+            return pd.read_sql_query(query, self.engine)
         except Exception as e:
             st.error(f"Error getting low stock medicines: {e}")
             return pd.DataFrame()
@@ -259,13 +259,12 @@ class DatabaseManager:
     def get_expiring_medicines(self, days=30):
         """Get medicines expiring within specified days"""
         try:
-            with self.get_connection() as conn:
-                query = """
-                SELECT * FROM medicines 
-                WHERE expiry_date <= CURRENT_DATE + %s::interval
-                ORDER BY expiry_date
-                """
-                return pd.read_sql_query(query, conn, params=(f"{days} days",))
+            query = """
+            SELECT * FROM medicines 
+            WHERE expiry_date <= CURRENT_DATE + %s::interval
+            ORDER BY expiry_date
+            """
+            return pd.read_sql_query(query, self.engine, params=(f"{days} days",))
         except Exception as e:
             st.error(f"Error getting expiring medicines: {e}")
             return pd.DataFrame()
@@ -273,13 +272,12 @@ class DatabaseManager:
     def get_customer_prescription_history(self, customer_name):
         """Get prescription history for a specific customer"""
         try:
-            with self.get_connection() as conn:
-                query = """
-                SELECT * FROM prescriptions 
-                WHERE customer_name = %s 
-                ORDER BY date_prescribed DESC
-                """
-                return pd.read_sql_query(query, conn, params=(customer_name,))
+            query = """
+            SELECT * FROM prescriptions 
+            WHERE customer_name = %s 
+            ORDER BY date_prescribed DESC
+            """
+            return pd.read_sql_query(query, self.engine, params=(customer_name,))
         except Exception as e:
             st.error(f"Error getting customer prescription history: {e}")
             return pd.DataFrame()

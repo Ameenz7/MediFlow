@@ -65,7 +65,8 @@ pages = {
     "💊 Inventory": "inventory", 
     "📋 Prescriptions": "prescriptions",
     "👥 Customers": "customers",
-    "📊 Reports": "reports"
+    "📊 Reports": "reports",
+    "💾 Backup & Export": "backup_export"
 }
 
 selected_page = st.sidebar.selectbox("Navigate to:", list(pages.keys()))
@@ -139,28 +140,32 @@ if selected_page == "🏠 Dashboard":
     
     with col2:
         st.subheader("📅 Prescription Trends")
-        if not prescriptions.empty:
+        if not prescriptions.empty and 'date_prescribed' in prescriptions.columns:
             # Daily prescriptions for last 30 days
             prescriptions_copy = prescriptions.copy()
-            prescriptions_copy['date_prescribed'] = pd.to_datetime(prescriptions_copy['date_prescribed'])
-            last_30_days = datetime.now() - timedelta(days=30)
-            recent_prescriptions = prescriptions_copy[prescriptions_copy['date_prescribed'] >= last_30_days]
+            try:
+                prescriptions_copy['date_prescribed'] = pd.to_datetime(prescriptions_copy['date_prescribed'], errors='coerce')
+                last_30_days = datetime.now() - timedelta(days=30)
+                recent_prescriptions = prescriptions_copy[prescriptions_copy['date_prescribed'] >= last_30_days]
             
-            if not recent_prescriptions.empty:
-                daily_counts = recent_prescriptions.groupby(recent_prescriptions['date_prescribed'].dt.date).size().reset_index()
-                daily_counts.columns = ['date', 'count']
-                
-                fig = px.line(
-                    daily_counts, 
-                    x='date', 
-                    y='count',
-                    title="Daily Prescriptions (Last 30 Days)"
-                )
-                fig.update_traces(line_color='#2563EB')
-                fig.update_layout(height=300)
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("No prescription data in the last 30 days")
+                if not recent_prescriptions.empty:
+                    daily_counts = recent_prescriptions.groupby(recent_prescriptions['date_prescribed'].dt.date).size().reset_index()
+                    daily_counts.columns = ['date', 'count']
+                    
+                    fig = px.line(
+                        daily_counts, 
+                        x='date', 
+                        y='count',
+                        title="Daily Prescriptions (Last 30 Days)"
+                    )
+                    fig.update_traces(line_color='#2563EB')
+                    fig.update_layout(height=300)
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.info("No prescription data in the last 30 days")
+            except Exception as e:
+                st.error(f"Error loading prescription trends: {e}")
+                st.info("Unable to load prescription trends")
         else:
             st.info("No prescription data available")
     
@@ -201,6 +206,8 @@ elif selected_page == "👥 Customers":
     exec(open('pages/customers.py').read())
 elif selected_page == "📊 Reports":
     exec(open('pages/reports.py').read())
+elif selected_page == "💾 Backup & Export":
+    exec(open('pages/backup_export.py').read())
 
 # Footer
 st.sidebar.markdown("---")
