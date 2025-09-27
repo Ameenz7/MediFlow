@@ -10,7 +10,7 @@ st.markdown('<h1 class="main-header">📊 Reports & Analytics</h1>', unsafe_allo
 dm = st.session_state.data_manager
 
 # Reports tabs
-tab1, tab2, tab3, tab4 = st.tabs(["📦 Inventory Reports", "💰 Sales Reports", "👥 Customer Analytics", "📋 Prescription Analytics"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📦 Inventory Reports", "💰 Sales Reports", "📈 Financial Reports", "👥 Customer Analytics", "📋 Prescription Analytics"])
 
 with tab1:
     st.subheader("📦 Inventory Status Reports")
@@ -215,6 +215,252 @@ with tab2:
         st.info("No sales data available for reporting.")
 
 with tab3:
+    st.subheader("📈 Comprehensive Financial Reports")
+    
+    medicines = dm.load_medicines()
+    prescriptions = dm.load_prescriptions()
+    
+    if not medicines.empty:
+        # Calculate financial metrics
+        medicines['profit_per_unit'] = medicines['unit_price'] - medicines['cost_price']
+        medicines['profit_margin_percent'] = (medicines['profit_per_unit'] / medicines['unit_price'] * 100).round(1)
+        medicines['inventory_cost'] = medicines['stock_quantity'] * medicines['cost_price']
+        medicines['inventory_value'] = medicines['stock_quantity'] * medicines['unit_price']
+        medicines['potential_profit'] = medicines['inventory_value'] - medicines['inventory_cost']
+        
+        # Financial summary metrics
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            total_inventory_cost = medicines['inventory_cost'].sum()
+            st.metric("Total Inventory Cost", format_currency(total_inventory_cost))
+        
+        with col2:
+            total_inventory_value = medicines['inventory_value'].sum()
+            st.metric("Total Inventory Value", format_currency(total_inventory_value))
+        
+        with col3:
+            total_potential_profit = medicines['potential_profit'].sum()
+            st.metric("Potential Profit", format_currency(total_potential_profit))
+        
+        with col4:
+            overall_margin = (total_potential_profit / total_inventory_value * 100) if total_inventory_value > 0 else 0
+            st.metric("Overall Margin", f"{overall_margin:.1f}%")
+        
+        st.markdown("---")
+        
+        # Profit Analysis Charts
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("Profit Margin by Medicine")
+            top_margin_medicines = medicines.nlargest(10, 'profit_margin_percent')
+            fig = px.bar(
+                top_margin_medicines,
+                x='profit_margin_percent',
+                y='name',
+                orientation='h',
+                color='profit_margin_percent',
+                color_continuous_scale='RdYlGn',
+                title="Top 10 Medicines by Profit Margin %"
+            )
+            fig.update_layout(height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            st.subheader("Inventory Value vs Cost by Category")
+            category_financial = medicines.groupby('category').agg({
+                'inventory_cost': 'sum',
+                'inventory_value': 'sum',
+                'potential_profit': 'sum'
+            }).reset_index()
+            
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                name='Cost',
+                x=category_financial['category'],
+                y=category_financial['inventory_cost'],
+                marker_color='#DC2626'
+            ))
+            fig.add_trace(go.Bar(
+                name='Value',
+                x=category_financial['category'],
+                y=category_financial['inventory_value'],
+                marker_color='#059669'
+            ))
+            fig.update_layout(
+                title="Inventory Cost vs Value by Category",
+                barmode='group',
+                height=400,
+                xaxis_tickangle=-45
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # Supplier Financial Analysis
+        st.subheader("💼 Supplier Financial Performance")
+        
+        supplier_analysis = medicines.groupby('supplier').agg({
+            'inventory_cost': 'sum',
+            'inventory_value': 'sum',
+            'potential_profit': 'sum',
+            'name': 'count'
+        }).reset_index()
+        supplier_analysis.columns = ['Supplier', 'Total Cost', 'Total Value', 'Potential Profit', 'Medicine Count']
+        supplier_analysis['Profit Margin %'] = (supplier_analysis['Potential Profit'] / supplier_analysis['Total Value'] * 100).round(1)
+        supplier_analysis['Avg Cost per Medicine'] = (supplier_analysis['Total Cost'] / supplier_analysis['Medicine Count']).round(2)
+        
+        # Format currency columns
+        for col in ['Total Cost', 'Total Value', 'Potential Profit']:
+            supplier_analysis[col] = supplier_analysis[col].apply(format_currency)
+        supplier_analysis['Avg Cost per Medicine'] = supplier_analysis['Avg Cost per Medicine'].apply(format_currency)
+        
+        st.dataframe(supplier_analysis, use_container_width=True)
+        
+        # Sales Profit Analysis (if prescriptions data available)
+        if not prescriptions.empty:
+            st.subheader("💰 Sales Profitability Analysis")
+            
+            completed_prescriptions = prescriptions[prescriptions['status'] == 'Completed'].copy()
+            
+            if not completed_prescriptions.empty:
+                # Merge with medicines to get cost data
+                sales_with_costs = completed_prescriptions.merge(
+                    medicines[['name', 'cost_price', 'unit_price']], 
+                    left_on='medicine_name', 
+                    right_on='name', 
+                    how='left'
+                )
+                
+                # Calculate profit for each sale
+                sales_with_costs['sale_cost'] = sales_with_costs['quantity'] * sales_with_costs['cost_price']
+                sales_with_costs['sale_profit'] = sales_with_costs['total_cost'] - sales_with_costs['sale_cost']
+                sales_with_costs['profit_margin'] = (sales_with_costs['sale_profit'] / sales_with_costs['total_cost'] * 100).round(1)
+                
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    total_sales_cost = sales_with_costs['sale_cost'].sum()
+                    st.metric("Total Sales Cost", format_currency(total_sales_cost))
+                
+                with col2:
+                    total_sales_revenue = sales_with_costs['total_cost'].sum()
+                    st.metric("Total Sales Revenue", format_currency(total_sales_revenue))
+                
+                with col3:
+                    total_sales_profit = sales_with_costs['sale_profit'].sum()
+                    st.metric("Total Sales Profit", format_currency(total_sales_profit))
+                
+                with col4:
+                    sales_margin = (total_sales_profit / total_sales_revenue * 100) if total_sales_revenue > 0 else 0
+                    st.metric("Sales Margin", f"{sales_margin:.1f}%")
+                
+                # Profit by medicine chart
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.subheader("Most Profitable Medicine Sales")
+                    medicine_profits = sales_with_costs.groupby('medicine_name')['sale_profit'].sum().reset_index()
+                    medicine_profits = medicine_profits.sort_values('sale_profit', ascending=False).head(10)
+                    
+                    fig = px.bar(
+                        medicine_profits,
+                        x='medicine_name',
+                        y='sale_profit',
+                        color='sale_profit',
+                        color_continuous_scale='Greens',
+                        title="Top 10 Medicines by Profit Generated"
+                    )
+                    fig.update_layout(height=400, xaxis_tickangle=-45)
+                    st.plotly_chart(fig, use_container_width=True)
+                
+                with col2:
+                    st.subheader("Daily Profit Trends")
+                    sales_with_costs['date_prescribed'] = pd.to_datetime(sales_with_costs['date_prescribed'])
+                    daily_profits = sales_with_costs.groupby(
+                        sales_with_costs['date_prescribed'].dt.date
+                    ).agg({
+                        'sale_profit': 'sum',
+                        'total_cost': 'sum'
+                    }).reset_index()
+                    daily_profits.columns = ['date', 'profit', 'revenue']
+                    
+                    fig = go.Figure()
+                    fig.add_trace(go.Scatter(
+                        x=daily_profits['date'],
+                        y=daily_profits['revenue'],
+                        mode='lines+markers',
+                        name='Revenue',
+                        line=dict(color='#2563EB')
+                    ))
+                    fig.add_trace(go.Scatter(
+                        x=daily_profits['date'],
+                        y=daily_profits['profit'],
+                        mode='lines+markers',
+                        name='Profit',
+                        line=dict(color='#059669')
+                    ))
+                    fig.update_layout(
+                        title="Daily Revenue vs Profit Trends",
+                        height=400,
+                        yaxis_title="Amount ($)"
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("No completed sales available for profit analysis")
+        
+        # Profitability Recommendations
+        st.subheader("💡 Financial Recommendations")
+        
+        # Low margin medicines
+        low_margin_medicines = medicines[medicines['profit_margin_percent'] < 20]
+        if not low_margin_medicines.empty:
+            st.warning(f"⚠️ **Low Margin Alert**: {len(low_margin_medicines)} medicines have profit margins below 20%")
+            with st.expander("View Low Margin Medicines"):
+                display_df = low_margin_medicines[['name', 'category', 'supplier', 'cost_price', 'unit_price', 'profit_margin_percent']].copy()
+                display_df['cost_price'] = display_df['cost_price'].apply(format_currency)
+                display_df['unit_price'] = display_df['unit_price'].apply(format_currency)
+                st.dataframe(display_df, use_container_width=True)
+        
+        # High value inventory
+        high_value_medicines = medicines[medicines['inventory_value'] > 1000]
+        if not high_value_medicines.empty:
+            st.info(f"💰 **High Value Inventory**: {len(high_value_medicines)} medicines have inventory value > $1,000")
+            with st.expander("View High Value Inventory"):
+                display_df = high_value_medicines[['name', 'stock_quantity', 'unit_price', 'inventory_value', 'potential_profit']].copy()
+                display_df['unit_price'] = display_df['unit_price'].apply(format_currency)
+                display_df['inventory_value'] = display_df['inventory_value'].apply(format_currency)
+                display_df['potential_profit'] = display_df['potential_profit'].apply(format_currency)
+                st.dataframe(display_df, use_container_width=True)
+        
+        # Export financial data
+        st.subheader("📊 Export Financial Reports")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("Export Medicine Profitability"):
+                export_df = medicines[['name', 'category', 'supplier', 'cost_price', 'unit_price', 'profit_per_unit', 'profit_margin_percent', 'stock_quantity', 'inventory_cost', 'inventory_value', 'potential_profit']].copy()
+                csv_data = export_df.to_csv(index=False)
+                st.download_button(
+                    label="Download Medicine Profitability CSV",
+                    data=csv_data,
+                    file_name=f"medicine_profitability_{datetime.now().strftime('%Y%m%d')}.csv",
+                    mime="text/csv"
+                )
+        
+        with col2:
+            if st.button("Export Supplier Analysis"):
+                csv_data = supplier_analysis.to_csv(index=False)
+                st.download_button(
+                    label="Download Supplier Analysis CSV",
+                    data=csv_data,
+                    file_name=f"supplier_analysis_{datetime.now().strftime('%Y%m%d')}.csv",
+                    mime="text/csv"
+                )
+    
+    else:
+        st.info("No financial data available for analysis.")
+
+with tab4:
     st.subheader("👥 Customer Analytics")
     
     customers = dm.load_customers()
@@ -306,7 +552,7 @@ with tab3:
     else:
         st.info("Insufficient data for customer analytics.")
 
-with tab4:
+with tab5:
     st.subheader("📋 Prescription Analytics")
     
     prescriptions = dm.load_prescriptions()

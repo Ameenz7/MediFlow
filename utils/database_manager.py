@@ -28,7 +28,7 @@ class DatabaseManager:
         """Load medicines from database"""
         try:
             query = """
-            SELECT id, name, category, manufacturer, supplier, unit_price, 
+            SELECT id, name, category, manufacturer, supplier, unit_price, cost_price,
                    stock_quantity, reorder_level, expiry_date, description, date_added
             FROM medicines
             ORDER BY name
