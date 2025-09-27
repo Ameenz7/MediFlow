@@ -267,7 +267,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📸 Screenshots
 
 *Dashboard showing key metrics and alerts*
-![Dashboard](screenshots/dashboard.png)
+![Dashboard](<img width="1900" height="1000" alt="image" src="https://github.com/user-attachments/assets/903c5c3b-8a91-402c-9c12-84de82a0387b" />
+)
 
 *Financial reports with profit analysis*
 ![Financial Reports](screenshots/financial-reports.png)
