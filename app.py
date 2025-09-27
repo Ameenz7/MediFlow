@@ -95,10 +95,14 @@ if selected_page == "🏠 Dashboard":
         st.metric("Total Customers", total_customers, delta=None)
     
     with col4:
-        if not prescriptions.empty:
+        if not prescriptions.empty and 'date_prescribed' in prescriptions.columns:
             prescriptions_copy = prescriptions.copy()
-            prescriptions_copy['date_prescribed'] = pd.to_datetime(prescriptions_copy['date_prescribed'])
-            today_prescriptions = len(prescriptions_copy[prescriptions_copy['date_prescribed'].dt.date == datetime.now().date()])
+            try:
+                prescriptions_copy['date_prescribed'] = pd.to_datetime(prescriptions_copy['date_prescribed'], errors='coerce')
+                today_prescriptions = len(prescriptions_copy[prescriptions_copy['date_prescribed'].dt.date == datetime.now().date()])
+            except Exception as e:
+                st.error(f"Date parsing error: {e}")
+                today_prescriptions = 0
         else:
             today_prescriptions = 0
         st.metric("Today's Prescriptions", today_prescriptions, delta=None)
