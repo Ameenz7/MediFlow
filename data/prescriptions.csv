@@ -1,0 +1,1 @@
+prescription_id,customer_name,doctor_name,medicine_name,quantity,dosage,instructions,date_prescribed,status,total_cost,created_at
