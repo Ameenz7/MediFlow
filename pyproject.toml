@@ -1,12 +1,25 @@
 [project]
-name = "repl-nix-workspace"
-version = "0.1.0"
-description = "Add your description here"
+name = "mediflow"
+version = "1.0.0"
+description = "Advanced Pharmacy Management System with Financial Analytics, Medicine Safety Warnings, and Barcode Scanning"
+readme = "README.md"
 requires-python = ">=3.11"
+authors = [
+    {name = "MediFlow Team"}
+]
 dependencies = [
+    "streamlit>=1.50.0",
     "pandas>=2.3.2",
     "plotly>=6.3.0",
-    "psycopg2-binary>=2.9.10",
     "sqlalchemy>=2.0.43",
-    "streamlit>=1.50.0",
+    "psycopg2-binary>=2.9.10",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Ameenz7/MediFlow"
+Repository = "https://github.com/Ameenz7/MediFlow"
+Documentation = "https://github.com/Ameenz7/MediFlow#readme"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
