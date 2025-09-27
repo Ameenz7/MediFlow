@@ -8,7 +8,6 @@ import pandas as pd
 import json
 import os
 from typing import Dict, List, Optional
-import re
 
 class BarcodeScanner:
     def __init__(self):
