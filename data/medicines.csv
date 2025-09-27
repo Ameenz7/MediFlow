@@ -1,6 +1,6 @@
 id,name,category,manufacturer,supplier,unit_price,cost_price,stock_quantity,reorder_level,expiry_date,description,date_added
-MED001,Paracetamol,Analgesic,PharmaCorp,MediSupply Ltd,5.99,3.5,150,20,2024-12-31,Pain relief medication,2025-09-27
+MED001,Paracetamol,Analgesic,PharmaCorp,MediSupply Ltd,5.99,3.5,151,20,2024-12-31,Pain relief medication,2025-09-27
 MED002,Amoxicillin,Antibiotic,BioHealth,MediSupply Ltd,12.5,8.75,45,15,2024-10-15,Antibiotic for bacterial infections,2025-09-27
-MED003,Ibuprofen,Anti-inflammatory,PharmaCorp,HealthMart,8.75,5.25,8,25,2024-11-30,Non-steroidal anti-inflammatory drug,2025-09-27
+MED003,Ibuprofen,Anti-inflammatory,PharmaCorp,HealthMart,8.75,5.25,108,25,2024-11-30,Non-steroidal anti-inflammatory drug,2025-09-27
 MED004,Cetirizine,Antihistamine,AllergyMed,HealthMart,6.25,3.75,75,20,2025-03-20,Allergy relief medication,2025-09-27
 MED005,Omeprazole,Proton Pump Inhibitor,DigestHealth,MediSupply Ltd,15.0,10.5,30,10,2024-09-30,Acid reflux treatment,2025-09-27
