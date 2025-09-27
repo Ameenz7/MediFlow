@@ -9,6 +9,11 @@ import io
 
 st.markdown('<h1 class="main-header">💾 Backup & Export</h1>', unsafe_allow_html=True)
 
+# Initialize data manager if not already done
+if 'data_manager' not in st.session_state:
+    from utils.data_manager import DataManager
+    st.session_state.data_manager = DataManager()
+
 dm = st.session_state.data_manager
 backup_manager = BackupManager(dm)
 
