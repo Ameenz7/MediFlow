@@ -253,6 +253,10 @@ elif selected_page == "📱 Quick Scan":
 
     st.markdown('<h1 class="main-header">📱 Quick Scan Entry</h1>', unsafe_allow_html=True)
 
+    # Initialize data manager if not already done
+    if 'data_manager' not in st.session_state:
+        st.session_state.data_manager = DataManager()
+
     dm = st.session_state.data_manager
     scanner = BarcodeScanner()
 
