@@ -1,0 +1,12 @@
+# Core dependencies
+streamlit>=1.50.0
+pandas>=2.3.2
+plotly>=6.3.0
+
+# Database and data processing
+sqlalchemy>=2.0.43
+psycopg2-binary>=2.9.10
+
+# Additional utilities
+python-dateutil>=2.9.0
+pytz>=2025.2
