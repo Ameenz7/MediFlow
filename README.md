@@ -271,10 +271,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 )
 
 *Financial reports with profit analysis*
-![Financial Reports](screenshots/financial-reports.png)
+![Financial Reports](https://github.com/user-attachments/assets/67daf4f1-cba8-40ec-b944-e6538c7d508c />
+)
 
 *Medicine safety warnings in action*
-![Safety Warnings](screenshots/safety-warnings.png)
+![Safety Warnings](https://github.com/user-attachments/assets/f61f1bb0-328a-4fd4-bd4a-8ccf39bcab2e />
+)
 
 *Barcode scanning interface*
 ![Barcode Scanner](screenshots/barcode-scanner.png)
