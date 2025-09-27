@@ -21,29 +21,32 @@ class DataManager:
         
         # Medicines CSV structure
         if not os.path.exists(self.medicines_file):
-            medicines_df = pd.DataFrame(columns=[
+            medicines_columns = [
                 'id', 'name', 'category', 'manufacturer', 'supplier', 
                 'unit_price', 'stock_quantity', 'reorder_level', 'expiry_date', 
                 'description', 'date_added'
-            ])
+            ]
+            medicines_df = pd.DataFrame(columns=medicines_columns)
             medicines_df.to_csv(self.medicines_file, index=False)
         
         # Prescriptions CSV structure
         if not os.path.exists(self.prescriptions_file):
-            prescriptions_df = pd.DataFrame(columns=[
+            prescriptions_columns = [
                 'prescription_id', 'customer_name', 'doctor_name', 'medicine_name',
                 'quantity', 'dosage', 'instructions', 'date_prescribed', 'status',
                 'total_cost', 'created_at'
-            ])
+            ]
+            prescriptions_df = pd.DataFrame(columns=prescriptions_columns)
             prescriptions_df.to_csv(self.prescriptions_file, index=False)
         
         # Customers CSV structure
         if not os.path.exists(self.customers_file):
-            customers_df = pd.DataFrame(columns=[
+            customers_columns = [
                 'customer_id', 'name', 'date_of_birth', 'gender', 'blood_type',
                 'phone', 'email', 'address', 'allergies', 'medical_conditions',
                 'emergency_contact_name', 'emergency_contact_phone', 'date_registered'
-            ])
+            ]
+            customers_df = pd.DataFrame(columns=customers_columns)
             customers_df.to_csv(self.customers_file, index=False)
     
     # Medicine management methods

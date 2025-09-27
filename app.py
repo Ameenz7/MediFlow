@@ -4,7 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import os
-from utils.data_manager import DataManager
+from utils.database_manager import DatabaseManager
 from utils.helpers import format_currency, get_stock_status_color
 
 # Page configuration
@@ -15,9 +15,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Initialize data manager
+# Initialize database manager
 if 'data_manager' not in st.session_state:
-    st.session_state.data_manager = DataManager()
+    st.session_state.data_manager = DatabaseManager()
 
 dm = st.session_state.data_manager
 
@@ -95,7 +95,12 @@ if selected_page == "🏠 Dashboard":
         st.metric("Total Customers", total_customers, delta=None)
     
     with col4:
-        today_prescriptions = len(prescriptions[prescriptions['date_prescribed'] == datetime.now().strftime('%Y-%m-%d')])
+        if not prescriptions.empty:
+            prescriptions_copy = prescriptions.copy()
+            prescriptions_copy['date_prescribed'] = pd.to_datetime(prescriptions_copy['date_prescribed'])
+            today_prescriptions = len(prescriptions_copy[prescriptions_copy['date_prescribed'].dt.date == datetime.now().date()])
+        else:
+            today_prescriptions = 0
         st.metric("Today's Prescriptions", today_prescriptions, delta=None)
     
     st.markdown("---")
@@ -132,22 +137,26 @@ if selected_page == "🏠 Dashboard":
         st.subheader("📅 Prescription Trends")
         if not prescriptions.empty:
             # Daily prescriptions for last 30 days
-            prescriptions['date_prescribed'] = pd.to_datetime(prescriptions['date_prescribed'])
+            prescriptions_copy = prescriptions.copy()
+            prescriptions_copy['date_prescribed'] = pd.to_datetime(prescriptions_copy['date_prescribed'])
             last_30_days = datetime.now() - timedelta(days=30)
-            recent_prescriptions = prescriptions[prescriptions['date_prescribed'] >= last_30_days]
+            recent_prescriptions = prescriptions_copy[prescriptions_copy['date_prescribed'] >= last_30_days]
             
-            daily_counts = recent_prescriptions.groupby(recent_prescriptions['date_prescribed'].dt.date).size().reset_index()
-            daily_counts.columns = ['date', 'count']
-            
-            fig = px.line(
-                daily_counts, 
-                x='date', 
-                y='count',
-                title="Daily Prescriptions (Last 30 Days)"
-            )
-            fig.update_traces(line_color='#2563EB')
-            fig.update_layout(height=300)
-            st.plotly_chart(fig, use_container_width=True)
+            if not recent_prescriptions.empty:
+                daily_counts = recent_prescriptions.groupby(recent_prescriptions['date_prescribed'].dt.date).size().reset_index()
+                daily_counts.columns = ['date', 'count']
+                
+                fig = px.line(
+                    daily_counts, 
+                    x='date', 
+                    y='count',
+                    title="Daily Prescriptions (Last 30 Days)"
+                )
+                fig.update_traces(line_color='#2563EB')
+                fig.update_layout(height=300)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("No prescription data in the last 30 days")
         else:
             st.info("No prescription data available")
     

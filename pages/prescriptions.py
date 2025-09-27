@@ -170,6 +170,7 @@ with tab2:
                         st.info(f"Total Cost: {format_currency(total_cost)}")
                         
                         # Update medicine stock
+                        selected_medicine = medicines[medicines['name'] == medicine_name].iloc[0]
                         new_stock = selected_medicine['stock_quantity'] - quantity
                         dm.update_medicine_stock(medicine_name, new_stock)
                         
