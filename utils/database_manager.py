@@ -8,12 +8,19 @@ from sqlalchemy import create_engine
 
 class DatabaseManager:
     def __init__(self):
-        self.database_url = os.getenv('DATABASE_URL')
-        if not self.database_url:
-            raise ValueError("DATABASE_URL environment variable not set")
-        
+        # Use the provided database connection string (URL encoded password)
+        self.database_url = "postgresql://postgres:Ameen%40db%40@localhost:5432/MediFlowDB"
+
+        # Also check for environment variable as fallback
+        env_url = os.getenv('DATABASE_URL')
+        if env_url:
+            self.database_url = env_url
+
         # Create SQLAlchemy engine for pandas operations
         self.engine = create_engine(self.database_url)
+
+        # Create tables if they don't exist
+        self.create_tables()
     
     def get_connection(self):
         """Get database connection"""
@@ -22,6 +29,75 @@ class DatabaseManager:
         except Exception as e:
             st.error(f"Database connection error: {e}")
             return None
+
+    def create_tables(self):
+        """Create database tables if they don't exist"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cursor:
+                    # Create medicines table
+                    cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS medicines (
+                        id VARCHAR(50) PRIMARY KEY,
+                        name VARCHAR(255) NOT NULL,
+                        category VARCHAR(100),
+                        manufacturer VARCHAR(255),
+                        supplier VARCHAR(255),
+                        unit_price DECIMAL(10,2),
+                        cost_price DECIMAL(10,2),
+                        stock_quantity INTEGER DEFAULT 0,
+                        reorder_level INTEGER DEFAULT 10,
+                        expiry_date DATE,
+                        description TEXT,
+                        date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """)
+
+                    # Create customers table
+                    cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS customers (
+                        customer_id VARCHAR(50) PRIMARY KEY,
+                        name VARCHAR(255) NOT NULL,
+                        date_of_birth DATE,
+                        gender VARCHAR(50),
+                        blood_type VARCHAR(10),
+                        phone VARCHAR(50),
+                        email VARCHAR(255),
+                        address TEXT,
+                        allergies TEXT,
+                        medical_conditions TEXT,
+                        emergency_contact_name VARCHAR(255),
+                        emergency_contact_phone VARCHAR(50),
+                        date_registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """)
+
+                    # Create prescriptions table
+                    cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS prescriptions (
+                        prescription_id VARCHAR(50) PRIMARY KEY,
+                        customer_id VARCHAR(50),
+                        customer_name VARCHAR(255) NOT NULL,
+                        doctor_name VARCHAR(255) NOT NULL,
+                        medicine_id VARCHAR(50),
+                        medicine_name VARCHAR(255) NOT NULL,
+                        quantity INTEGER NOT NULL,
+                        dosage VARCHAR(255),
+                        instructions TEXT,
+                        date_prescribed DATE NOT NULL,
+                        status VARCHAR(50) DEFAULT 'Pending',
+                        total_cost DECIMAL(10,2),
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
+                        FOREIGN KEY (medicine_id) REFERENCES medicines(id)
+                    )
+                    """)
+
+                    conn.commit()
+                    return True
+        except Exception as e:
+            st.error(f"Error creating tables: {e}")
+            return False
     
     # Medicine management methods
     def load_medicines(self):
@@ -50,14 +126,15 @@ class DatabaseManager:
                     
                     # Insert new medicine
                     insert_query = """
-                    INSERT INTO medicines (id, name, category, manufacturer, supplier, unit_price, 
+                    INSERT INTO medicines (id, name, category, manufacturer, supplier, unit_price, cost_price,
                                          stock_quantity, reorder_level, expiry_date, description, date_added)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """
                     cursor.execute(insert_query, (
                         medicine_data['id'], medicine_data['name'], medicine_data['category'],
                         medicine_data['manufacturer'], medicine_data['supplier'], medicine_data['unit_price'],
-                        medicine_data['stock_quantity'], medicine_data['reorder_level'], medicine_data['expiry_date'],
+                        medicine_data.get('cost_price', 0), medicine_data['stock_quantity'],
+                        medicine_data['reorder_level'], medicine_data['expiry_date'],
                         medicine_data['description'], medicine_data['date_added']
                     ))
                     conn.commit()
@@ -288,16 +365,124 @@ class DatabaseManager:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             backup_dir = f"backup_{timestamp}"
             os.makedirs(backup_dir, exist_ok=True)
-            
+
             # Export all tables to CSV
             tables = ['medicines', 'customers', 'prescriptions']
-            
+
             with self.get_connection() as conn:
                 for table in tables:
                     df = pd.read_sql_query(f"SELECT * FROM {table}", conn)
                     df.to_csv(f"{backup_dir}/{table}.csv", index=False)
-            
+
             return True
         except Exception as e:
             st.error(f"Error creating backup: {e}")
+            return False
+
+    # Refill reminder management methods
+    def load_refill_reminders(self):
+        """Load refill reminders from database"""
+        try:
+            # Create refill_reminders table if it doesn't exist
+            with self.get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS refill_reminders (
+                        reminder_id VARCHAR(50) PRIMARY KEY,
+                        customer_name VARCHAR(255) NOT NULL,
+                        medicine_name VARCHAR(255) NOT NULL,
+                        last_prescription_date DATE,
+                        refill_due_date DATE NOT NULL,
+                        dosage VARCHAR(255),
+                        quantity_per_refill INTEGER DEFAULT 30,
+                        reminder_sent BOOLEAN DEFAULT FALSE,
+                        status VARCHAR(50) DEFAULT 'Active',
+                        notes TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """)
+                    conn.commit()
+
+            # Load refill reminders
+            query = """
+            SELECT reminder_id, customer_name, medicine_name, last_prescription_date,
+                   refill_due_date, dosage, quantity_per_refill, reminder_sent, status, notes, created_at
+            FROM refill_reminders
+            ORDER BY refill_due_date
+            """
+            return pd.read_sql_query(query, self.engine)
+        except Exception as e:
+            st.error(f"Error loading refill reminders: {e}")
+            return pd.DataFrame()
+
+    def add_refill_reminder(self, reminder_data):
+        """Add a new refill reminder"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cursor:
+                    # Check if reminder already exists
+                    cursor.execute("SELECT reminder_id FROM refill_reminders WHERE reminder_id = %s", (reminder_data['reminder_id'],))
+                    if cursor.fetchone():
+                        return False
+
+                    # Insert new reminder
+                    insert_query = """
+                    INSERT INTO refill_reminders (reminder_id, customer_name, medicine_name, last_prescription_date,
+                                                 refill_due_date, dosage, quantity_per_refill, reminder_sent, status, notes, created_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """
+                    cursor.execute(insert_query, (
+                        reminder_data['reminder_id'], reminder_data['customer_name'], reminder_data['medicine_name'],
+                        reminder_data['last_prescription_date'], reminder_data['refill_due_date'], reminder_data['dosage'],
+                        reminder_data['quantity_per_refill'], reminder_data['reminder_sent'], reminder_data['status'],
+                        reminder_data['notes'], reminder_data['created_at']
+                    ))
+                    conn.commit()
+                    return True
+        except Exception as e:
+            st.error(f"Error adding refill reminder: {e}")
+            return False
+
+    def get_due_refills(self, days_ahead=7):
+        """Get refill reminders due within specified days"""
+        try:
+            query = """
+            SELECT * FROM refill_reminders
+            WHERE refill_due_date <= CURRENT_DATE + %s::interval
+            AND status = 'Active'
+            ORDER BY refill_due_date
+            """
+            return pd.read_sql_query(query, self.engine, params=(f"{days_ahead} days",))
+        except Exception as e:
+            st.error(f"Error getting due refills: {e}")
+            return pd.DataFrame()
+
+    def update_refill_reminder_status(self, reminder_id, new_status):
+        """Update refill reminder status"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        "UPDATE refill_reminders SET status = %s WHERE reminder_id = %s",
+                        (new_status, reminder_id)
+                    )
+                    conn.commit()
+                    return cursor.rowcount > 0
+        except Exception as e:
+            st.error(f"Error updating refill reminder status: {e}")
+            return False
+
+    def mark_reminder_sent(self, reminder_id):
+        """Mark a refill reminder as sent"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        "UPDATE refill_reminders SET reminder_sent = TRUE WHERE reminder_id = %s",
+                        (reminder_id,)
+                    )
+                    conn.commit()
+                    return cursor.rowcount > 0
+        except Exception as e:
+            st.error(f"Error marking reminder as sent: {e}")
             return False

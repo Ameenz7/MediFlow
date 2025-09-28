@@ -8,8 +8,16 @@ st.markdown('<h1 class="main-header">💊 Refill Reminders</h1>', unsafe_allow_h
 
 # Initialize data manager if not already done
 if 'data_manager' not in st.session_state:
-    from utils.data_manager import DataManager
-    st.session_state.data_manager = DataManager()
+    try:
+        # Try to use database manager first
+        from utils.database_manager import DatabaseManager
+        st.session_state.data_manager = DatabaseManager()
+        st.session_state.using_database = True
+    except Exception as e:
+        # Fall back to CSV manager if database fails
+        from utils.data_manager import DataManager
+        st.session_state.data_manager = DataManager()
+        st.session_state.using_database = False
 
 dm = st.session_state.data_manager
 
@@ -32,6 +40,9 @@ with tab1:
         st.stop()
 
     if not due_reminders.empty:
+        # Convert date columns to datetime format
+        due_reminders['refill_due_date'] = pd.to_datetime(due_reminders['refill_due_date'])
+
         # Summary metrics
         col1, col2, col3 = st.columns(3)
 
@@ -51,7 +62,7 @@ with tab1:
 
         # Display reminders
         for _, reminder in due_reminders.iterrows():
-            days_until_due = (reminder['refill_due_date'].date() - datetime.now().date()).days
+            days_until_due = (reminder['refill_due_date'] - pd.Timestamp.now()).days
 
             if days_until_due < 0:
                 alert_type = "overdue"
@@ -111,7 +122,7 @@ with tab1:
 
     if not active_reminders.empty:
         active_reminders['refill_due_date'] = pd.to_datetime(active_reminders['refill_due_date'])
-        active_reminders['days_until_due'] = (active_reminders['refill_due_date'].dt.date - datetime.now().date).dt.days
+        active_reminders['days_until_due'] = (active_reminders['refill_due_date'] - pd.Timestamp.now()).dt.days
 
         st.dataframe(active_reminders[['customer_name', 'medicine_name', 'refill_due_date', 'days_until_due', 'dosage', 'quantity_per_refill']], width='stretch')
     else:
@@ -214,7 +225,15 @@ with tab3:
                 }
             )
             fig.update_layout(height=300)
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(
+                fig,
+                use_container_width=True,
+                config={
+                    "displayModeBar": True,
+                    "scrollZoom": True,
+                    "responsive": True
+                }
+            )
 
         with col2:
             st.subheader("Monthly Reminder Trends")
@@ -235,7 +254,7 @@ with tab3:
                 xaxis_title="Month",
                 yaxis_title="Number of Reminders"
             )
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
 
         # Top medicines with refill reminders
         st.subheader("Medicines with Most Refill Reminders")

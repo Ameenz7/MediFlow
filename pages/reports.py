@@ -66,13 +66,16 @@ with tab1:
                 }
             )
             fig.update_layout(height=400)
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
         
         with col2:
             st.subheader("Inventory Value by Category")
-            category_value = medicines.groupby('category', group_keys=False).apply(
-                lambda x: (x['stock_quantity'] * x['unit_price']).sum()
-            ).reset_index()
+            category_value = (medicines
+                .assign(value=medicines['stock_quantity'] * medicines['unit_price'])
+                .groupby('category', group_keys=False)
+                .agg(value=('value', 'sum'))
+                .reset_index()
+            )
             category_value.columns = ['category', 'value']
             
             fig = px.bar(
@@ -83,7 +86,7 @@ with tab1:
                 color_continuous_scale='Blues'
             )
             fig.update_layout(height=400, xaxis_tickangle=-45)
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
         
         # Low stock alert table
         st.subheader("🚨 Low Stock Alerts")
@@ -179,7 +182,7 @@ with tab2:
                     )
                     fig.update_traces(line_color='#2563EB')
                     fig.update_layout(height=400)
-                    st.plotly_chart(fig, width='stretch')
+                    st.plotly_chart(fig, use_container_width=True)
                 else:
                     st.info("No completed sales in the selected period")
             
@@ -198,7 +201,7 @@ with tab2:
                         title="Top 10 Medicines by Revenue"
                     )
                     fig.update_layout(height=400, xaxis_tickangle=-45)
-                    st.plotly_chart(fig, width='stretch')
+                    st.plotly_chart(fig, use_container_width=True)
                 else:
                     st.info("No sales data available")
             
@@ -270,7 +273,7 @@ with tab3:
                 title="Top 10 Medicines by Profit Margin %"
             )
             fig.update_layout(height=400)
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
         
         with col2:
             st.subheader("Inventory Value vs Cost by Category")
@@ -299,7 +302,7 @@ with tab3:
                 height=400,
                 xaxis_tickangle=-45
             )
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
         
         # Supplier Financial Analysis
         st.subheader("💼 Supplier Financial Performance")
@@ -376,7 +379,15 @@ with tab3:
                         title="Top 10 Medicines by Profit Generated"
                     )
                     fig.update_layout(height=400, xaxis_tickangle=-45)
-                    st.plotly_chart(fig, width='stretch')
+                    st.plotly_chart(
+                        fig,
+                        use_container_width=True,
+                        config={
+                            "displayModeBar": True,
+                            "scrollZoom": True,
+                            "responsive": True
+                        }
+                    )
                 
                 with col2:
                     st.subheader("Daily Profit Trends")
@@ -409,7 +420,7 @@ with tab3:
                         height=400,
                         yaxis_title="Amount ($)"
                     )
-                    st.plotly_chart(fig, width='stretch')
+                    st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("No completed sales available for profit analysis")
         
@@ -513,7 +524,7 @@ with tab4:
                 title="Customer Distribution by Age Group"
             )
             fig.update_layout(height=400)
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
         
         with col2:
             st.subheader("Top Customers by Spending")
@@ -529,7 +540,7 @@ with tab4:
                     title="Top 10 Customers by Total Spending"
                 )
                 fig.update_layout(height=400, xaxis_tickangle=-45)
-                st.plotly_chart(fig, width='stretch')
+                st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("No customer spending data available")
         
@@ -601,7 +612,7 @@ with tab5:
                 }
             )
             fig.update_layout(height=400)
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
         
         with col2:
             st.subheader("Prescriptions by Doctor")
@@ -613,7 +624,7 @@ with tab5:
                 title="Top 10 Prescribing Doctors"
             )
             fig.update_layout(height=400)
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
         
         # Monthly prescription trends
         st.subheader("Monthly Prescription Trends")
@@ -638,7 +649,7 @@ with tab5:
             yaxis_title="Number of Prescriptions",
             height=400
         )
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, use_container_width=True)
         
         # Export functionality
         st.subheader("📥 Export Reports")
